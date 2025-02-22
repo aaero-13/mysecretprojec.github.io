@@ -317,9 +317,131 @@
             }
         }
 
-        // Остальные функции (listFiles, deleteFileOrFolder, createFolder, uploadFile) остаются без изменений
-        // Добавьте showLoader() и hideLoader() в начало каждой асинхронной функции
-        // Добавьте showError() для обработки ошибок
+        // Получение списка файлов
+        async function listFiles(path = currentPath) {
+            showLoader(); // Показываем спиннер
+            const result = await sendRequest('list-files', 'GET', { path });
+            hideLoader(); // Скрываем спиннер
+
+            const fileList = document.getElementById('file-list');
+            fileList.innerHTML = "";
+
+            if (result.status === "success") {
+                currentPath = result.current_directory;
+                pathHistory.push(currentPath);  // Добавляем текущий путь в историю
+
+                // Добавляем кнопку "Назад", если это не корневой каталог
+                if (pathHistory.length > 1) {
+                    const backButton = document.createElement('button');
+                    backButton.innerText = "⬅️ Назад";
+                    backButton.onclick = () => {
+                        pathHistory.pop();  // Удаляем текущий путь из истории
+                        const previousPath = pathHistory[pathHistory.length - 1];
+                        listFiles(previousPath);
+                    };
+                    fileList.appendChild(backButton);
+                }
+
+                result.files.forEach(file => {
+                    const li = document.createElement('li');
+                    li.innerText = `📄 ${file}`;
+
+                    const deleteButton = document.createElement('button');
+                    deleteButton.innerText = "🗑 Удалить";
+                    deleteButton.onclick = () => deleteFileOrFolder(file, 'file');
+
+                    li.appendChild(deleteButton);
+                    fileList.appendChild(li);
+                });
+
+                result.folders.forEach(folder => {
+                    const li = document.createElement('li');
+                    li.innerText = `📁 ${folder}`;
+
+                    const openButton = document.createElement('button');
+                    openButton.innerText = "📂 Открыть";
+                    openButton.onclick = () => listFiles(`${currentPath}/${folder}`);
+
+                    const deleteButton = document.createElement('button');
+                    deleteButton.innerText = "🗑 Удалить";
+                    deleteButton.onclick = () => deleteFileOrFolder(folder, 'folder');
+
+                    li.appendChild(openButton);
+                    li.appendChild(deleteButton);
+                    fileList.appendChild(li);
+                });
+            } else {
+                showError(result.message); // Показываем ошибку
+            }
+        }
+
+        // Удаление файла или папки
+        async function deleteFileOrFolder(name, type) {
+            const confirmDelete = confirm(`Вы уверены, что хотите удалить ${type === 'file' ? 'файл' : 'папку'} "${name}"?`);
+            if (confirmDelete) {
+                showLoader(); // Показываем спиннер
+                const result = await sendRequest('delete-file', 'POST', { file_name: name, action: 'delete' });
+                hideLoader(); // Скрываем спиннер
+
+                if (result.status === "success") {
+                    listFiles();  // Обновляем список файлов
+                } else {
+                    showError(result.message); // Показываем ошибку
+                }
+            }
+        }
+
+        // Создание папки
+        async function createFolder() {
+            const folderName = prompt("Введите имя новой папки:");
+            if (folderName) {
+                showLoader(); // Показываем спиннер
+                try {
+                    const result = await sendRequest('create-folder', 'POST', { folder_name: folderName });
+                    hideLoader(); // Скрываем спиннер
+
+                    if (result.status === "success") {
+                        listFiles(); // Обновляем список файлов
+                    } else {
+                        showError(result.message); // Показываем ошибку
+                    }
+                } catch (error) {
+                    hideLoader(); // Скрываем спиннер
+                    showError("Ошибка при создании папки.");
+                }
+            }
+        }
+
+        // Загрузка файла
+        async function uploadFile() {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.onchange = async (event) => {
+                const file = event.target.files[0];
+                const formData = new FormData();
+                formData.append('file', file);
+
+                showLoader(); // Показываем спиннер
+                try {
+                    const response = await fetch(`${backendUrl}/upload-file`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const result = await response.json();
+                    hideLoader(); // Скрываем спиннер
+
+                    if (result.status === "success") {
+                        listFiles(); // Обновляем список файлов
+                    } else {
+                        showError(result.message); // Показываем ошибку
+                    }
+                } catch (error) {
+                    hideLoader(); // Скрываем спиннер
+                    showError("Ошибка при загрузке файла.");
+                }
+            };
+            fileInput.click();
+        }
 
         // Инициализация Mini App Telegram
         tg.ready();  // Уведомляем Telegram, что приложение готово
