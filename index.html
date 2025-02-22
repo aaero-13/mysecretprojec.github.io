@@ -6,121 +6,99 @@
     <title>Управление ПК и файлами</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        <style>
-    body {
-        font-family: Arial, sans-serif;
-        margin: 20px;
-        padding: 0;
-        background-color: #f9f9f9;
-    }
-    h1 {
-        color: #333;
-        text-align: center;
-    }
-    button {
-        padding: 10px 20px;
-        margin: 5px;
-        font-size: 16px;
-        cursor: pointer;
-        background-color: #007bff;
-        color: white;
-        border: none;
-        border-radius: 5px;
-        transition: background-color 0.3s ease;
-    }
-    button:hover {
-        background-color: #0056b3;
-    }
-    pre {
-        background: #f4f4f4;
-        padding: 10px;
-        border-radius: 5px;
-        overflow-x: auto;
-    }
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        margin: 20px 0;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        background-color: white;
-    }
-    th, td {
-        padding: 12px;
-        text-align: center;
-        border: 1px solid #ddd;
-    }
-    th {
-        background-color: #007bff;
-        color: white;
-        font-weight: bold;
-    }
-    tr:nth-child(even) {
-        background-color: #f9f9f9;
-    }
-    tr:hover {
-        background-color: #f1f1f1;
-    }
-    .file-list {
-        margin-top: 20px;
-    }
-    .file-list ul {
-        list-style-type: none;
-        padding: 0;
-    }
-    .file-list li {
-        margin: 5px 0;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 10px;
-        background-color: white;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-    }
-    .file-list button {
-        margin-left: 10px;
-        background-color: #dc3545;
-        color: white;
-        border: none;
-        border-radius: 5px;
-        padding: 5px 10px;
-        cursor: pointer;
-    }
-    .file-list button:hover {
-        background-color: #c82333;
-    }
-    .container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 20px;
-        background-color: white;
-        border-radius: 10px;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    }
-    .table-container {
-        overflow-x: auto;
-    }
-
-    /* Адаптация для мобильных устройств */
-    @media (max-width: 600px) {
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+            background-color: #f9f9f9;
+        }
         h1 {
-            font-size: 24px;
+            color: #333;
+            text-align: center;
         }
         button {
-            width: 100%;
-            margin: 5px 0;
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
         }
         table {
-            font-size: 14px;
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            background-color: white;
         }
         th, td {
-            padding: 8px;
+            padding: 12px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        .file-list {
+            margin-top: 20px;
+        }
+        .file-list ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .file-list li {
+            margin: 5px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .file-list button {
+            margin-left: 10px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        .file-list button:hover {
+            background-color: #c82333;
         }
         .container {
-            padding: 10px;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
-    }
-</style>
+        .table-container {
+            overflow-x: auto;
+        }
     </style>
 </head>
 <body>
@@ -133,7 +111,6 @@
         <button onclick="listFiles()">📁 Список файлов</button>
         <button onclick="uploadFile()">📤 Загрузить файл</button>
         <button onclick="createFolder()">📂 Создать папку</button>
-        <button onclick="goBack()">🔙 Назад</button>
 
         <h2>Результат:</h2>
         <div id="output"></div>
@@ -147,7 +124,6 @@
     <script>
         const backendUrl = "https://aaero.ddns.net:8000";  // Замените на ваш URL
         const tg = window.Telegram.WebApp;  // Инициализация Telegram WebApp API
-        let currentPath = "/home/tema/Files";  // Текущий путь
 
         // Функция для отправки запросов на backend
         async function sendRequest(endpoint, method = "GET", data = {}) {
@@ -250,14 +226,12 @@
         }
 
         // Получение списка файлов
-        async function listFiles(path = currentPath) {
-            const result = await sendRequest('list-files', 'GET', { path });
+        async function listFiles() {
+            const result = await sendRequest('list-files', 'GET');
             const fileList = document.getElementById('file-list');
             fileList.innerHTML = "";
 
             if (result.status === "success") {
-                currentPath = result.current_directory;
-
                 result.files.forEach(file => {
                     const li = document.createElement('li');
                     li.innerText = `📄 ${file}`;
@@ -266,11 +240,6 @@
                     deleteButton.innerText = "🗑 Удалить";
                     deleteButton.onclick = () => deleteFileOrFolder(file, 'file');
 
-                    const downloadButton = document.createElement('button');
-                    downloadButton.innerText = "📥 Скачать";
-                    downloadButton.onclick = () => downloadFile(file);
-
-                    li.appendChild(downloadButton);
                     li.appendChild(deleteButton);
                     fileList.appendChild(li);
                 });
@@ -279,15 +248,10 @@
                     const li = document.createElement('li');
                     li.innerText = `📁 ${folder}`;
 
-                    const openButton = document.createElement('button');
-                    openButton.innerText = "📂 Открыть";
-                    openButton.onclick = () => listFiles(`${currentPath}/${folder}`);
-
                     const deleteButton = document.createElement('button');
                     deleteButton.innerText = "🗑 Удалить";
                     deleteButton.onclick = () => deleteFileOrFolder(folder, 'folder');
 
-                    li.appendChild(openButton);
                     li.appendChild(deleteButton);
                     fileList.appendChild(li);
                 });
@@ -340,19 +304,6 @@
                 const result = await sendRequest('create-folder', 'POST', { folder_name: folderName });
                 document.getElementById('output').innerText = JSON.stringify(result, null, 2);
                 listFiles();  // Обновляем список файлов
-            }
-        }
-
-        // Скачивание файла
-        async function downloadFile(fileName) {
-            window.open(`${backendUrl}/download-file/${fileName}`, '_blank');
-        }
-
-        // Навигация назад
-        function goBack() {
-            const parentPath = currentPath.split('/').slice(0, -1).join('/');
-            if (parentPath) {
-                listFiles(parentPath);
             }
         }
 
