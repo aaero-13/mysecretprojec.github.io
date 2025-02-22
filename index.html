@@ -317,63 +317,67 @@
             }
         }
 
-        // Получение списка файлов
-        async function listFiles(path = currentPath) {
-            showLoader(); // Показываем спиннер
-            const result = await sendRequest('list-files', 'GET', { path });
-            hideLoader(); // Скрываем спиннер
+// Получение списка файлов
+async function listFiles(path = currentPath) {
+    showLoader(); // Показываем спиннер
+    const result = await sendRequest('list-files', 'GET', { path });
+    hideLoader(); // Скрываем спиннер
 
-            const fileList = document.getElementById('file-list');
-            fileList.innerHTML = "";
+    const fileList = document.getElementById('file-list');
+    fileList.innerHTML = "";
 
-            if (result.status === "success") {
-                currentPath = result.current_directory;
-                pathHistory.push(currentPath);  // Добавляем текущий путь в историю
+    if (result.status === "success") {
+        currentPath = result.current_directory; // Обновляем текущий путь
+        pathHistory.push(currentPath);  // Добавляем текущий путь в историю
 
-                // Добавляем кнопку "Назад", если это не корневой каталог
-                if (pathHistory.length > 1) {
-                    const backButton = document.createElement('button');
-                    backButton.innerText = "⬅️ Назад";
-                    backButton.onclick = () => {
-                        pathHistory.pop();  // Удаляем текущий путь из истории
-                        const previousPath = pathHistory[pathHistory.length - 1];
-                        listFiles(previousPath);
-                    };
-                    fileList.appendChild(backButton);
-                }
-
-                result.files.forEach(file => {
-                    const li = document.createElement('li');
-                    li.innerText = `📄 ${file}`;
-
-                    const deleteButton = document.createElement('button');
-                    deleteButton.innerText = "🗑 Удалить";
-                    deleteButton.onclick = () => deleteFileOrFolder(file, 'file');
-
-                    li.appendChild(deleteButton);
-                    fileList.appendChild(li);
-                });
-
-                result.folders.forEach(folder => {
-                    const li = document.createElement('li');
-                    li.innerText = `📁 ${folder}`;
-
-                    const openButton = document.createElement('button');
-                    openButton.innerText = "📂 Открыть";
-                    openButton.onclick = () => listFiles(`${currentPath}/${folder}`);
-
-                    const deleteButton = document.createElement('button');
-                    deleteButton.innerText = "🗑 Удалить";
-                    deleteButton.onclick = () => deleteFileOrFolder(folder, 'folder');
-
-                    li.appendChild(openButton);
-                    li.appendChild(deleteButton);
-                    fileList.appendChild(li);
-                });
-            } else {
-                showError(result.message); // Показываем ошибку
-            }
+        // Добавляем кнопку "Назад", если это не корневой каталог
+        if (pathHistory.length > 1) {
+            const backButton = document.createElement('button');
+            backButton.innerText = "⬅️ Назад";
+            backButton.onclick = () => {
+                pathHistory.pop();  // Удаляем текущий путь из истории
+                const previousPath = pathHistory[pathHistory.length - 1];
+                listFiles(previousPath); // Переходим в предыдущую директорию
+            };
+            fileList.appendChild(backButton);
         }
+
+        // Отображаем файлы
+        result.files.forEach(file => {
+            const li = document.createElement('li');
+            li.innerText = `📄 ${file}`;
+
+            const deleteButton = document.createElement('button');
+            deleteButton.innerText = "🗑 Удалить";
+            deleteButton.onclick = () => deleteFileOrFolder(file, 'file');
+
+            li.appendChild(deleteButton);
+            fileList.appendChild(li);
+        });
+
+        // Отображаем папки
+        result.folders.forEach(folder => {
+            const li = document.createElement('li');
+            li.innerText = `📁 ${folder}`;
+
+            const openButton = document.createElement('button');
+            openButton.innerText = "📂 Открыть";
+            openButton.onclick = () => {
+                listFiles(`${currentPath}/${folder}`); // Переходим в папку
+            };
+
+            const deleteButton = document.createElement('button');
+            deleteButton.innerText = "🗑 Удалить";
+            deleteButton.onclick = () => deleteFileOrFolder(folder, 'folder');
+
+            li.appendChild(openButton);
+            li.appendChild(deleteButton);
+            fileList.appendChild(li);
+        });
+    } else {
+        showError(result.message); // Показываем ошибку
+    }
+}
 
         // Удаление файла или папки
         async function deleteFileOrFolder(name, type) {
