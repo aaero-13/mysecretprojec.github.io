@@ -137,31 +137,30 @@
             }
         }
 
-        // Получение погоды
+             // Получение погоды
         async function getWeather() {
-            hideFileExplorer(); // Скрываем проводник
-            showLoader(); // Показываем спиннер
             const result = await sendRequest('weather', 'GET');
-            hideLoader(); // Скрываем спиннер
-
             const output = document.getElementById('output');
             output.innerHTML = "";  // Очищаем предыдущий вывод
 
             if (result.status === "success") {
-                result.data.forEach(weather => {
-                    const card = document.createElement('div');
-                    card.className = 'card';
-                    card.innerHTML = `
-                        <h3>🌤 Погода на ${weather.time}</h3>
-                        <p>🌡 Температура: ${weather.temp}°C</p>
-                        <p>🌤 Погода: ${weather.description}</p>
-                        <p>💧 Влажность: ${weather.humidity}%</p>
-                        <p>🌬 Ветер: ${weather.wind_speed} м/с</p>
+                result.data.forEach(entry => {
+                    const item = document.createElement('div');
+                    item.className = 'data-item';
+                    item.innerHTML = `
+                        <i>🌤</i>
+                        <div class="content">
+                            <p><strong>${entry.time}</strong></p>
+                            <p>🌡 Температура: ${entry.temp}°C</p>
+                            <p>🌤 Погода: ${entry.description}</p>
+                            <p>💧 Влажность: ${entry.humidity}%</p>
+                            <p>🌬 Ветер: ${entry.wind_speed} м/с</p>
+                        </div>
                     `;
-                    output.appendChild(card);
+                    output.appendChild(item);
                 });
             } else {
-                showError(result.message); // Показываем ошибку
+                output.innerText = result.message;
             }
         }
 
