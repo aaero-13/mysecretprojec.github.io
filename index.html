@@ -29,6 +29,22 @@
         }
         li {
             margin: 5px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #ddd;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .progress {
+            height: 100%;
+            background: #007bff;
+            border-radius: 5px;
+            width: 0;
         }
     </style>
 </head>
@@ -40,10 +56,12 @@
     <button onclick="getWeather()">🌤 Погода</button>
     <button onclick="getCrypto()">📈 Крипта</button>
     <button onclick="listFiles()">📁 Список файлов</button>
-    <button onclick="deleteFile('example.txt')">🗑 Удалить файл</button>
-    <button onclick="createFolder('new_folder')">📂 Создать папку</button>
     <input type="file" id="fileInput" onchange="uploadFile()" style="display: none;">
     <button onclick="document.getElementById('fileInput').click()">📤 Загрузить файл</button>
+
+    <div class="progress-bar" id="progressBar">
+        <div class="progress" id="progress"></div>
+    </div>
 
     <pre id="output"></pre>
     <ul id="file-list"></ul>
@@ -52,34 +70,58 @@
         const tg = window.Telegram.WebApp;
         const backendUrl = "https://aaero.ddns.net";  // Замените на URL вашего backend
 
+        // Проверка загрузки Telegram WebApp
+        if (!window.Telegram || !window.Telegram.WebApp) {
+            alert("Telegram WebApp не загружен. Откройте приложение в Telegram.");
+        }
+
         // Показываем данные пользователя
         document.getElementById('username').innerText = tg.initDataUnsafe.user?.username || "Гость";
 
         // Функция для отправки запросов на backend
         async function sendRequest(endpoint, method = "GET", data = {}) {
-            const response = await fetch(`${backendUrl}/${endpoint}`, {
-                method: method,
-                headers: { 'Content-Type': 'application/json' },
-                body: method !== "GET" ? JSON.stringify(data) : null
-            });
-            return await response.json();
+            try {
+                const response = await fetch(`${backendUrl}/${endpoint}`, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: method !== "GET" ? JSON.stringify(data) : null
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Ошибка: ${response.statusText}`);
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error("Ошибка при отправке запроса:", error);
+                return { status: "error", message: error.message };
+            }
         }
 
         // Wake-on-LAN
         async function wakeOnLAN() {
             const result = await sendRequest('wol', 'POST', { mac_address: '74:56:3c:96:53:39' });
+            if (result.status === "error") {
+                alert(result.message);  // Показываем ошибку пользователю
+            }
             document.getElementById('output').innerText = JSON.stringify(result, null, 2);
         }
 
         // Получение погоды
         async function getWeather() {
             const result = await sendRequest('weather', 'GET', { city: 'Balashikha' });
+            if (result.status === "error") {
+                alert(result.message);
+            }
             document.getElementById('output').innerText = JSON.stringify(result, null, 2);
         }
 
         // Получение курсов криптовалют
         async function getCrypto() {
             const result = await sendRequest('crypto', 'GET', { coins: ['bitcoin', 'ethereum', 'solana'] });
+            if (result.status === "error") {
+                alert(result.message);
+            }
             document.getElementById('output').innerText = JSON.stringify(result, null, 2);
         }
 
@@ -93,12 +135,24 @@
                 result.files.forEach(file => {
                     const li = document.createElement('li');
                     li.innerText = `📄 ${file}`;
+
+                    const deleteButton = document.createElement('button');
+                    deleteButton.innerText = "🗑";
+                    deleteButton.onclick = () => deleteFile(file);
+
+                    li.appendChild(deleteButton);
                     fileList.appendChild(li);
                 });
 
                 result.folders.forEach(folder => {
                     const li = document.createElement('li');
                     li.innerText = `📁 ${folder}`;
+
+                    const deleteButton = document.createElement('button');
+                    deleteButton.innerText = "🗑";
+                    deleteButton.onclick = () => deleteFile(folder);
+
+                    li.appendChild(deleteButton);
                     fileList.appendChild(li);
                 });
             } else {
@@ -106,16 +160,14 @@
             }
         }
 
-        // Удаление файла
+        // Удаление файла или папки
         async function deleteFile(fileName) {
             const result = await sendRequest('delete-file', 'POST', { file_name: fileName, action: 'delete' });
+            if (result.status === "error") {
+                alert(result.message);
+            }
             document.getElementById('output').innerText = JSON.stringify(result, null, 2);
-        }
-
-        // Создание папки
-        async function createFolder(folderName) {
-            const result = await sendRequest('create-folder', 'POST', { folder_name: folderName });
-            document.getElementById('output').innerText = JSON.stringify(result, null, 2);
+            listFiles();  // Обновляем список файлов
         }
 
         // Загрузка файла
@@ -128,12 +180,29 @@
             const formData = new FormData();
             formData.append('file', file);
 
-            const response = await fetch(`${backendUrl}/upload-file`, {
-                method: 'POST',
-                body: formData
-            });
-            const result = await response.json();
-            document.getElementById('output').innerText = JSON.stringify(result, null, 2);
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', `${backendUrl}/upload-file`, true);
+
+            // Отслеживаем прогресс загрузки
+            xhr.upload.onprogress = (event) => {
+                if (event.lengthComputable) {
+                    const percent = (event.loaded / event.total) * 100;
+                    document.getElementById('progress').style.width = `${percent}%`;
+                }
+            };
+
+            xhr.onload = () => {
+                if (xhr.status === 200) {
+                    const result = JSON.parse(xhr.responseText);
+                    document.getElementById('output').innerText = JSON.stringify(result, null, 2);
+                    listFiles();  // Обновляем список файлов
+                } else {
+                    alert("Ошибка при загрузке файла.");
+                }
+                document.getElementById('progress').style.width = "0%";  // Сбрасываем прогресс
+            };
+
+            xhr.send(formData);
         }
     </script>
 </body>
