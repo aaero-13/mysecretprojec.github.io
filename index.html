@@ -363,7 +363,8 @@ async function listFiles(path = currentPath) {
             const openButton = document.createElement('button');
             openButton.innerText = "📂 Открыть";
             openButton.onclick = () => {
-                listFiles(`${currentPath}/${folder}`); // Переходим в папку
+                const newPath = `${currentPath}/${folder}`.replace(/\/+/g, '/'); // Убираем лишние слеши
+                listFiles(newPath); // Переходим в папку
             };
 
             const deleteButton = document.createElement('button');
