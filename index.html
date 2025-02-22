@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram Mini App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 10px;
+            cursor: pointer;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: left;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Telegram Mini App</h1>
+    <p>Привет, <span id="username"></span>!</p>
+
+    <button onclick="wakeOnLAN()">🖥 Вкл ПК</button>
+    <button onclick="getWeather()">🌤 Погода</button>
+    <button onclick="getCrypto()">📈 Крипта</button>
+    <button onclick="listFiles()">📁 Список файлов</button>
+    <button onclick="deleteFile('example.txt')">🗑 Удалить файл</button>
+    <button onclick="createFolder('new_folder')">📂 Создать папку</button>
+    <input type="file" id="fileInput" onchange="uploadFile()" style="display: none;">
+    <button onclick="document.getElementById('fileInput').click()">📤 Загрузить файл</button>
+
+    <pre id="output"></pre>
+    <ul id="file-list"></ul>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        const backendUrl = "https://your-backend-url.com";  // Замените на URL вашего backend
+
+        // Показываем данные пользователя
+        document.getElementById('username').innerText = tg.initDataUnsafe.user?.username || "Гость";
+
+        // Функция для отправки запросов на backend
+        async function sendRequest(endpoint, method = "GET", data = {}) {
+            const response = await fetch(`${backendUrl}/${endpoint}`, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: method !== "GET" ? JSON.stringify(data) : null
+            });
+            return await response.json();
+        }
+
+        // Wake-on-LAN
+        async function wakeOnLAN() {
+            const result = await sendRequest('wol', 'POST', { mac_address: '74:56:3c:96:53:39' });
+            document.getElementById('output').innerText = JSON.stringify(result, null, 2);
+        }
+
+        // Получение погоды
+        async function getWeather() {
+            const result = await sendRequest('weather', 'GET', { city: 'Balashikha' });
+            document.getElementById('output').innerText = JSON.stringify(result, null, 2);
+        }
+
+        // Получение курсов криптовалют
+        async function getCrypto() {
+            const result = await sendRequest('crypto', 'GET', { coins: ['bitcoin', 'ethereum', 'solana'] });
+            document.getElementById('output').innerText = JSON.stringify(result, null, 2);
+        }
+
+        // Получение списка файлов
+        async function listFiles() {
+            const result = await sendRequest('list-files', 'GET');
+            const fileList = document.getElementById('file-list');
+            fileList.innerHTML = "";
+
+            if (result.status === "success") {
+                result.files.forEach(file => {
+                    const li = document.createElement('li');
+                    li.innerText = `📄 ${file}`;
+                    fileList.appendChild(li);
+                });
+
+                result.folders.forEach(folder => {
+                    const li = document.createElement('li');
+                    li.innerText = `📁 ${folder}`;
+                    fileList.appendChild(li);
+                });
+            } else {
+                document.getElementById('output').innerText = JSON.stringify(result, null, 2);
+            }
+        }
+
+        // Удаление файла
+        async function deleteFile(fileName) {
+            const result = await sendRequest('delete-file', 'POST', { file_name: fileName, action: 'delete' });
+            document.getElementById('output').innerText = JSON.stringify(result, null, 2);
+        }
+
+        // Создание папки
+        async function createFolder(folderName) {
+            const result = await sendRequest('create-folder', 'POST', { folder_name: folderName });
+            document.getElementById('output').innerText = JSON.stringify(result, null, 2);
+        }
+
+        // Загрузка файла
+        async function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const response = await fetch(`${backendUrl}/upload-file`, {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+            document.getElementById('output').innerText = JSON.stringify(result, null, 2);
+        }
+    </script>
+</body>
+</html>
