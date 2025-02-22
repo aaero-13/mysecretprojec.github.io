@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Управление ПК и файлами</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<style>
-        /* Ваши существующие стили */
+    <style>
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
@@ -31,62 +30,46 @@
         button:hover {
             background-color: #0056b3;
         }
-        .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #007bff;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .modal {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            z-index: 1000;
-        }
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 999;
-        }
-        .modal.show, .modal-overlay.show {
-            display: block;
-        }
-        .modal button {
-            margin-top: 10px;
-            padding: 8px 16px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .modal button:hover {
-            background-color: #0056b3;
-        }
-        .file-explorer {
-            display: none;
+        .data-list {
             margin-top: 20px;
         }
-        .file-explorer.active {
-            display: block;
+        .data-item {
+            display: flex;
+            align-items: center;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 10px 0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .data-item i {
+            font-size: 24px;
+            margin-right: 10px;
+            color: #007bff;
+        }
+        .data-item .content {
+            flex-grow: 1;
+        }
+        .data-item .content p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #555;
+        }
+        .weather-widget {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .weather-widget iframe {
+            width: 100%;
+            max-width: 600px;
+            height: 200px;
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .file-list {
+            margin-top: 20px;
         }
         .file-list ul {
             list-style-type: none;
@@ -122,6 +105,7 @@
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
+
         /* Адаптация для мобильных устройств */
         @media (max-width: 600px) {
             h1 {
@@ -130,6 +114,9 @@
             button {
                 width: 100%;
                 margin: 5px 0;
+            }
+            .weather-widget iframe {
+                height: 150px;
             }
         }
     </style>
@@ -141,36 +128,28 @@
         <button onclick="wakeOnLAN()">🖥 Включить ПК</button>
         <button onclick="getWeather()">🌤 Получить погоду</button>
         <button onclick="getCrypto()">📈 Курсы криптовалют</button>
-        <button onclick="openFileExplorer()">📂 Проводник</button>
+        <button onclick="listFiles()">📁 Список файлов</button>
+        <button onclick="uploadFile()">📤 Загрузить файл</button>
+        <button onclick="createFolder()">📂 Создать папку</button>
 
         <h2>Результат:</h2>
         <div id="output"></div>
 
-        <!-- Проводник -->
-        <div class="file-explorer" id="file-explorer">
-            <h2>Проводник</h2>
-            <button onclick="listFiles()">🔄 Обновить</button>
-            <button onclick="createFolder()">📂 Создать папку</button>
-            <button onclick="uploadFile()">📤 Загрузить файл</button>
-            <div class="file-list">
-                <ul id="file-list"></ul>
-            </div>
+        <!-- Погодный виджет -->
+        <div class="weather-widget">
+            <div id="ww_9adb3171eab63" v='1.3' loc='auto' a='{"t":"horizontal","lang":"ru","sl_lpl":1,"ids":[],"font":"Arial","sl_ics":"one_a","sl_sot":"celsius","cl_bkg":"image","cl_font":"#FFFFFF","cl_cloud":"#FFFFFF","cl_persp":"#81D4FA","cl_sun":"#FFC107","cl_moon":"#FFC107","cl_thund":"#FF5722"}'></div>
+            <script async src="https://app3.weatherwidget.org/js/?id=ww_9adb3171eab63"></script>
         </div>
-    </div>
 
-    <!-- Модальное окно для ошибок -->
-    <div id="modal-overlay" class="modal-overlay"></div>
-    <div id="modal" class="modal">
-        <h3>Ошибка</h3>
-        <p id="modal-message"></p>
-        <button onclick="hideModal()">Закрыть</button>
+        <div class="file-list">
+            <h2>Файлы и папки:</h2>
+            <ul id="file-list"></ul>
+        </div>
     </div>
 
     <script>
         const backendUrl = "https://aaero.ddns.net:8000";  // Замените на ваш URL
         const tg = window.Telegram.WebApp;  // Инициализация Telegram WebApp API
-        let currentPath = "/home/tema/Files";  // Текущий путь
-        let pathHistory = [];  // История путей для кнопки "Назад"
 
         // Функция для отправки запросов на backend
         async function sendRequest(endpoint, method = "GET", data = {}) {
@@ -192,94 +171,72 @@
             }
         }
 
-        // Показать спиннер
-        function showLoader() {
-            const loader = document.createElement('div');
-            loader.className = 'loader';
-            loader.id = 'loader';
-            document.getElementById('output').appendChild(loader);
-        }
-
-        // Скрыть спиннер
-        function hideLoader() {
-            const loader = document.getElementById('loader');
-            if (loader) loader.remove();
-        }
-
-        // Показать модальное окно с ошибкой
-        function showError(message) {
-            const modal = document.getElementById('modal');
-            const modalOverlay = document.getElementById('modal-overlay');
-            const modalMessage = document.getElementById('modal-message');
-
-            modalMessage.innerText = message;
-            modal.classList.add('show');
-            modalOverlay.classList.add('show');
-        }
-
-        // Скрыть модальное окно
-        function hideModal() {
-            const modal = document.getElementById('modal');
-            const modalOverlay = document.getElementById('modal-overlay');
-
-            modal.classList.remove('show');
-            modalOverlay.classList.remove('show');
-        }
-
-        // Открыть проводник
-        function openFileExplorer() {
-            const fileExplorer = document.getElementById('file-explorer');
-            fileExplorer.classList.add('active');
-            listFiles();  // Загрузить список файлов
-        }
-
-        // Скрыть проводник
-        function hideFileExplorer() {
-            const fileExplorer = document.getElementById('file-explorer');
-            fileExplorer.classList.remove('active');
-        }
-
         // Включение ПК (Wake-on-LAN)
         async function wakeOnLAN() {
-            hideFileExplorer(); // Скрываем проводник
-            showLoader(); // Показываем спиннер
             const result = await sendRequest('wol', 'POST', { mac_address: '74:56:3c:96:53:39' });
-            hideLoader(); // Скрываем спиннер
-
             const output = document.getElementById('output');
             output.innerHTML = "";  // Очищаем предыдущий вывод
 
             if (result.status === "success") {
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.innerHTML = `
-                    <h3>🖥 Wake-on-LAN</h3>
-                    <p>✅ Magic Packet отправлен на MAC: ${result.mac_address}</p>
+                const item = document.createElement('div');
+                item.className = 'data-item';
+                item.innerHTML = `
+                    <i>🖥</i>
+                    <div class="content">
+                        <p><strong>Wake-on-LAN</strong></p>
+                        <p>✅ Magic Packet отправлен на MAC: ${result.mac_address}</p>
+                    </div>
                 `;
-                output.appendChild(card);
+                output.appendChild(item);
             } else {
-                showError(result.message); // Показываем ошибку
+                output.innerText = result.message;
             }
         }
 
-             // Получение погоды
+        // Получение погоды
         async function getWeather() {
             const result = await sendRequest('weather', 'GET');
             const output = document.getElementById('output');
             output.innerHTML = "";  // Очищаем предыдущий вывод
 
             if (result.status === "success") {
-                result.data.forEach(entry => {
+                const item = document.createElement('div');
+                item.className = 'data-item';
+                item.innerHTML = `
+                    <i>🌤</i>
+                    <div class="content">
+                        <p><strong>Текущая погода</strong></p>
+                        <p>🌡 Температура: ${result.data[0].temp}°C</p>
+                        <p>🌤 Погода: ${result.data[0].description}</p>
+                        <p>💧 Влажность: ${result.data[0].humidity}%</p>
+                        <p>🌬 Ветер: ${result.data[0].wind_speed} м/с</p>
+                    </div>
+                `;
+                output.appendChild(item);
+            } else {
+                output.innerText = result.message;
+            }
+        }
+
+        // Получение курсов криптовалют
+        async function getCrypto() {
+            const result = await sendRequest('crypto', 'GET');
+            const output = document.getElementById('output');
+            output.innerHTML = "";  // Очищаем предыдущий вывод
+
+            if (result.status === "success") {
+                result.data.forEach(crypto => {
                     const item = document.createElement('div');
                     item.className = 'data-item';
                     item.innerHTML = `
-                        <i>🌤</i>
+                        <i>💰</i>
                         <div class="content">
-                            <p><strong>${entry.time}</strong></p>
-                            <p>🌡 Температура: ${entry.temp}°C</p>
-                            <p>🌤 Погода: ${entry.description}</p>
-                            <p>💧 Влажность: ${entry.humidity}%</p>
-                            <p>🌬 Ветер: ${entry.wind_speed} м/с</p>
+                            <p><strong>${crypto.name}</strong></p>
+                            <p>💰 USD: $${crypto.price_usd.toFixed(2)}</p>
+                            <p>₽ RUB: ₽${crypto.price_rub.toFixed(2)}</p>
+                            <p>📈 Изменение: ${crypto.change.toFixed(2)}%</p>
+                            <p>💼 Капитал: $${(crypto.market_cap / 1e9).toFixed(2)}B</p>
+                            <p>📊 Объем: $${(crypto.volume / 1e9).toFixed(2)}B</p>
                         </div>
                     `;
                     output.appendChild(item);
@@ -289,38 +246,87 @@
             }
         }
 
-        // Получение курсов криптовалют
-        async function getCrypto() {
-            hideFileExplorer(); // Скрываем проводник
-            showLoader(); // Показываем спиннер
-            const result = await sendRequest('crypto', 'GET');
-            hideLoader(); // Скрываем спиннер
-
-            const output = document.getElementById('output');
-            output.innerHTML = "";  // Очищаем предыдущий вывод
+        // Получение списка файлов
+        async function listFiles() {
+            const result = await sendRequest('list-files', 'GET');
+            const fileList = document.getElementById('file-list');
+            fileList.innerHTML = "";
 
             if (result.status === "success") {
-                result.data.forEach(crypto => {
-                    const card = document.createElement('div');
-                    card.className = 'card';
-                    card.innerHTML = `
-                        <h3>💰 ${crypto.name}</h3>
-                        <p>💰 USD: $${crypto.price_usd.toFixed(2)}</p>
-                        <p>₽ RUB: ₽${crypto.price_rub.toFixed(2)}</p>
-                        <p>📈 Изменение: ${crypto.change.toFixed(2)}%</p>
-                        <p>💼 Капитал: $${(crypto.market_cap / 1e9).toFixed(2)}B</p>
-                        <p>📊 Объем: $${(crypto.volume / 1e9).toFixed(2)}B</p>
-                    `;
-                    output.appendChild(card);
+                result.files.forEach(file => {
+                    const li = document.createElement('li');
+                    li.innerText = `📄 ${file}`;
+
+                    const deleteButton = document.createElement('button');
+                    deleteButton.innerText = "🗑 Удалить";
+                    deleteButton.onclick = () => deleteFileOrFolder(file, 'file');
+
+                    li.appendChild(deleteButton);
+                    fileList.appendChild(li);
+                });
+
+                result.folders.forEach(folder => {
+                    const li = document.createElement('li');
+                    li.innerText = `📁 ${folder}`;
+
+                    const deleteButton = document.createElement('button');
+                    deleteButton.innerText = "🗑 Удалить";
+                    deleteButton.onclick = () => deleteFileOrFolder(folder, 'folder');
+
+                    li.appendChild(deleteButton);
+                    fileList.appendChild(li);
                 });
             } else {
-                showError(result.message); // Показываем ошибку
+                document.getElementById('output').innerText = JSON.stringify(result, null, 2);
             }
         }
 
-        // Остальные функции (listFiles, deleteFileOrFolder, createFolder, uploadFile) остаются без изменений
-        // Добавьте showLoader() и hideLoader() в начало каждой асинхронной функции
-        // Добавьте showError() для обработки ошибок
+        // Удаление файла или папки
+        async function deleteFileOrFolder(name, type) {
+            const confirmDelete = confirm(`Вы уверены, что хотите удалить ${type === 'file' ? 'файл' : 'папку'} "${name}"?`);
+            if (confirmDelete) {
+                const result = await sendRequest('delete-file', 'POST', { file_name: name, action: 'delete' });
+                document.getElementById('output').innerText = JSON.stringify(result, null, 2);
+                listFiles();  // Обновляем список файлов
+            } else {
+                document.getElementById('output').innerText = "Удаление отменено.";
+            }
+        }
+
+        // Загрузка файла
+        async function uploadFile() {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.onchange = async (event) => {
+                const file = event.target.files[0];
+                const formData = new FormData();
+                formData.append('file', file);
+
+                try {
+                    const response = await fetch(`${backendUrl}/upload-file`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const result = await response.json();
+                    document.getElementById('output').innerText = JSON.stringify(result, null, 2);
+                    listFiles();  // Обновляем список файлов
+                } catch (error) {
+                    console.error("Ошибка при загрузке файла:", error);
+                    document.getElementById('output').innerText = "Ошибка при загрузке файла.";
+                }
+            };
+            fileInput.click();
+        }
+
+        // Создание папки
+        async function createFolder() {
+            const folderName = prompt("Введите имя новой папки:");
+            if (folderName) {
+                const result = await sendRequest('create-folder', 'POST', { folder_name: folderName });
+                document.getElementById('output').innerText = JSON.stringify(result, null, 2);
+                listFiles();  // Обновляем список файлов
+            }
+        }
 
         // Инициализация Mini App Telegram
         tg.ready();  // Уведомляем Telegram, что приложение готово
