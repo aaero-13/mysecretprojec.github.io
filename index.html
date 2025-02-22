@@ -196,28 +196,45 @@
             }
         }
 
-             // Получение погоды
+        // Получение погоды
         async function getWeather() {
             const result = await sendRequest('weather', 'GET');
             const output = document.getElementById('output');
             output.innerHTML = "";  // Очищаем предыдущий вывод
 
             if (result.status === "success") {
-                result.data.forEach(entry => {
-                    const item = document.createElement('div');
-                    item.className = 'data-item';
-                    item.innerHTML = `
-                        <i>🌤</i>
-                        <div class="content">
-                            <p><strong>${entry.time}</strong></p>
-                            <p>🌡 Температура: ${entry.temp}°C</p>
-                            <p>🌤 Погода: ${entry.description}</p>
-                            <p>💧 Влажность: ${entry.humidity}%</p>
-                            <p>🌬 Ветер: ${entry.wind_speed} м/с</p>
-                        </div>
+                const weatherContainer = document.createElement('div');
+                weatherContainer.className = 'weather-container';
+
+                // Текущая погода
+                const currentWeather = document.createElement('div');
+                currentWeather.className = 'current-weather';
+                currentWeather.innerHTML = `
+                    <h3>Текущая погода</h3>
+                    <p>🌡 Температура: ${result.data[0].temp}°C</p>
+                    <p>🌤 Погода: ${result.data[0].description}</p>
+                    <p>💧 Влажность: ${result.data[0].humidity}%</p>
+                    <p>🌬 Ветер: ${result.data[0].wind_speed} м/с</p>
+                `;
+
+                // Прогноз на ближайшие часы
+                const forecast = document.createElement('div');
+                forecast.className = 'forecast';
+                forecast.innerHTML = '<h3>Прогноз на ближайшие часы</h3>';
+
+                result.data.slice(1, 5).forEach(entry => {
+                    const forecastItem = document.createElement('div');
+                    forecastItem.className = 'forecast-item';
+                    forecastItem.innerHTML = `
+                        <p>${entry.time}</p>
+                        <p>${entry.temp}°C</p>
                     `;
-                    output.appendChild(item);
+                    forecast.appendChild(forecastItem);
                 });
+
+                weatherContainer.appendChild(currentWeather);
+                weatherContainer.appendChild(forecast);
+                output.appendChild(weatherContainer);
             } else {
                 output.innerText = result.message;
             }
