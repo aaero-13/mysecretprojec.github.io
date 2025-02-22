@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Управление ПК и файлами</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs" type="module"></script>
     <style>
         /* Ваши существующие стили */
         body {
@@ -262,33 +263,67 @@
             }
         }
 
-// Получение погоды
-async function getWeather() {
-    hideFileExplorer(); // Скрываем проводник
-    showLoader(); // Показываем спиннер
-    const result = await sendRequest('weather', 'GET');
-    hideLoader(); // Скрываем спиннер
+        // Получение погоды
+        async function getWeather() {
+            hideFileExplorer(); // Скрываем проводник
+            showLoader(); // Показываем спиннер
+            const result = await sendRequest('weather', 'GET');
+            hideLoader(); // Скрываем спиннер
 
-    const output = document.getElementById('output');
-    output.innerHTML = "";  // Очищаем предыдущий вывод
+            const output = document.getElementById('output');
+            output.innerHTML = "";  // Очищаем предыдущий вывод
 
-    if (result.status === "success") {
-        result.data.forEach(weather => {
-            const card = document.createElement('div');
-            card.className = 'card';
-            card.innerHTML = `
-                <h3>🌤 Погода на ${weather.time}</h3>
-                <p>🌡 Температура: ${weather.temp}°C</p>
-                <p>🌤 Погода: ${weather.description}</p>
-                <p>💧 Влажность: ${weather.humidity}%</p>
-                <p>🌬 Ветер: ${weather.wind_speed} м/с</p>
-            `;
-            output.appendChild(card);
-        });
-    } else {
-        showError(result.message); // Показываем ошибку
-    }
-}
+            if (result.status === "success") {
+                result.data.forEach(weather => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerHTML = `
+                        <h3>🌤 Погода на ${weather.time}</h3>
+                        <p>🌡 Температура: ${weather.temp}°C</p>
+                        <p>🌤 Погода: ${weather.description}</p>
+                        <p>💧 Влажность: ${weather.humidity}%</p>
+                        <p>🌬 Ветер: ${weather.wind_speed} м/с</p>
+                    `;
+
+                    // Добавляем анимацию в зависимости от погоды
+                    let animationUrl = '';
+                    if (weather.description.includes('ясно')) {
+                        animationUrl = 'https://lottie.host/4207a424-8cd3-4e1f-a206-409aa2b36f23/UqsfJj6X7o.lottie';
+                    } else if (weather.description.includes('облачно')) {
+                        animationUrl = 'https://lottie.host/ad164e16-e71a-4b48-ae3f-865fa5e18d2c/ewrHDEmClM.lottie';
+                    } else if (weather.description.includes('ливень')) {
+                        animationUrl = 'https://lottie.host/22c2fd98-f649-4e77-b90f-b98a3947ef20/vEKX17p5oK.lottie';
+                    } else if (weather.description.includes('пасмурно')) {
+                        animationUrl = 'https://lottie.host/d718b6c5-3661-4d93-a851-305f19e753b4/of9hAzFTYJ.lottie';
+                    } else if (weather.description.includes('гроза')) {
+                        animationUrl = 'https://lottie.host/c9a5f073-8253-44f0-b603-66dac096def2/7isT45zrAi.lottie';
+                    } else if (weather.description.includes('снег')) {
+                        animationUrl = 'https://lottie.host/ea2ec7fa-1263-48a3-931e-6f9244d111cf/4lyCS8Wo95.lottie';
+                    } else if (weather.description.includes('туман')) {
+                        animationUrl = 'https://lottie.host/d718b6c5-3661-4d93-a851-305f19e753b4/of9hAzFTYJ.lottie';
+                    } else if (weather.description.includes('малооблачно')) {
+                        animationUrl = 'https://lottie.host/ad164e16-e71a-4b48-ae3f-865fa5e18d2c/ewrHDEmClM.lottie';
+                    } else if (weather.description.includes('ночь')) {
+                        animationUrl = 'https://lottie.host/05d7240a-d891-40bf-b773-c15b26826848/6XQFCsxEi4.lottie';
+                    }
+
+                    if (animationUrl) {
+                        const animation = document.createElement('dotlottie-player');
+                        animation.src = animationUrl;
+                        animation.background = 'transparent';
+                        animation.speed = '1';
+                        animation.style = 'width: 100px; height: 100px';
+                        animation.loop = true;
+                        animation.autoplay = true;
+                        card.appendChild(animation);
+                    }
+
+                    output.appendChild(card);
+                });
+            } else {
+                showError(result.message); // Показываем ошибку
+            }
+        }
 
         // Получение курсов криптовалют
         async function getCrypto() {
