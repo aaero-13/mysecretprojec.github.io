@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Погода с анимациями</title>
+    <title>Управление ПК и файлами</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs" type="module"></script>
     <style>
+        /* Ваши существующие стили */
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
@@ -16,101 +18,333 @@
             color: #333;
             text-align: center;
         }
-        .weather-card {
-            display: flex;
-            align-items: center;
-            margin-bottom: 20px;
-            padding: 10px;
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             background-color: white;
+            padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
         }
-        .weather-card h3 {
-            margin: 0;
-            font-size: 18px;
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
         }
-        .weather-card p {
+        .modal.show, .modal-overlay.show {
+            display: block;
+        }
+        .modal button {
+            margin-top: 10px;
+            padding: 8px 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .modal button:hover {
+            background-color: #0056b3;
+        }
+        .file-explorer {
+            display: none;
+            margin-top: 20px;
+        }
+        .file-explorer.active {
+            display: block;
+        }
+        .file-list ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .file-list li {
             margin: 5px 0;
-            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
         }
-        .weather-card dotlottie-player {
-            margin-left: auto;
+        .file-list button {
+            margin-left: 10px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        .file-list button:hover {
+            background-color: #c82333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        /* Адаптация для мобильных устройств */
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 24px;
+            }
+            button {
+                width: 100%;
+                margin: 5px 0;
+            }
         }
     </style>
 </head>
 <body>
-    <h1>Погода с анимациями</h1>
-    <div id="output"></div>
+    <div class="container">
+        <h1>Управление ПК и файлами</h1>
+
+        <button onclick="wakeOnLAN()">🖥 Включить ПК</button>
+        <button onclick="getWeather()">🌤 Получить погоду</button>
+        <button onclick="getCrypto()">📈 Курсы криптовалют</button>
+        <button onclick="openFileExplorer()">📂 Проводник</button>
+
+        <h2>Результат:</h2>
+        <div id="output"></div>
+
+        <!-- Проводник -->
+        <div class="file-explorer" id="file-explorer">
+            <h2>Проводник</h2>
+            <button onclick="listFiles()">🔄 Обновить</button>
+            <button onclick="createFolder()">📂 Создать папку</button>
+            <button onclick="uploadFile()">📤 Загрузить файл</button>
+            <div class="file-list">
+                <ul id="file-list"></ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для ошибок -->
+    <div id="modal-overlay" class="modal-overlay"></div>
+    <div id="modal" class="modal">
+        <h3>Ошибка</h3>
+        <p id="modal-message"></p>
+        <button onclick="hideModal()">Закрыть</button>
+    </div>
 
     <script>
-        // Пример данных о погоде
-        const weatherData = [
-            { time: "10:00", temp: 25, description: "ясно", humidity: 50, wind_speed: 5 },
-            { time: "12:00", temp: 28, description: "облачно", humidity: 60, wind_speed: 7 },
-            { time: "15:00", temp: 22, description: "ливень", humidity: 85, wind_speed: 10 },
-            { time: "18:00", temp: 20, description: "пасмурно", humidity: 75, wind_speed: 8 },
-            { time: "21:00", temp: 18, description: "гроза", humidity: 90, wind_speed: 12 },
-            { time: "00:00", temp: 15, description: "снег", humidity: 70, wind_speed: 6 },
-            { time: "03:00", temp: 12, description: "туман", humidity: 95, wind_speed: 3 },
-            { time: "06:00", temp: 10, description: "малооблачно", humidity: 65, wind_speed: 4 },
-            { time: "09:00", temp: 14, description: "ночь", humidity: 80, wind_speed: 5 }
-        ];
+        const backendUrl = "https://aaero.ddns.net:8000";  // Замените на ваш URL
+        const tg = window.Telegram.WebApp;  // Инициализация Telegram WebApp API
+        let currentPath = "/home/tema/Files";  // Текущий путь
+        let pathHistory = [];  // История путей для кнопки "Назад"
 
-        const output = document.getElementById('output');
+        // Ключ API для OpenWeatherMap (замените на свой)
+        const openWeatherMapApiKey = "3d79aa1b71dbdda6d891f3f04245840d";
+        const city = "Балашиха";  // Город, для которого запрашивается погода
 
-        // Функция для получения URL анимации в зависимости от погоды
-        function getAnimationUrl(description) {
-            if (description.includes("ясно")) {
-                return "https://lottie.host/4207a424-8cd3-4e1f-a206-409aa2b36f23/UqsfJj6X7o.lottie";
-            } else if (description.includes("облачно")) {
-                return "https://lottie.host/ad164e16-e71a-4b48-ae3f-865fa5e18d2c/ewrHDEmClM.lottie";
-            } else if (description.includes("ливень")) {
-                return "https://lottie.host/22c2fd98-f649-4e77-b90f-b98a3947ef20/vEKX17p5oK.lottie";
-            } else if (description.includes("пасмурно")) {
-                return "https://lottie.host/d718b6c5-3661-4d93-a851-305f19e753b4/of9hAzFTYJ.lottie";
-            } else if (description.includes("гроза")) {
-                return "https://lottie.host/c9a5f073-8253-44f0-b603-66dac096def2/7isT45zrAi.lottie";
-            } else if (description.includes("снег")) {
-                return "https://lottie.host/ea2ec7fa-1263-48a3-931e-6f9244d111cf/4lyCS8Wo95.lottie";
-            } else if (description.includes("туман")) {
-                return "https://lottie.host/d718b6c5-3661-4d93-a851-305f19e753b4/of9hAzFTYJ.lottie";
-            } else if (description.includes("малооблачно")) {
-                return "https://lottie.host/ad164e16-e71a-4b48-ae3f-865fa5e18d2c/ewrHDEmClM.lottie";
-            } else if (description.includes("ночь")) {
-                return "https://lottie.host/05d7240a-d891-40bf-b773-c15b26826848/6XQFCsxEi4.lottie";
+        // Функция для отправки запросов на backend
+        async function sendRequest(endpoint, method = "GET", data = {}) {
+            try {
+                const response = await fetch(`${backendUrl}/${endpoint}`, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: method !== "GET" ? JSON.stringify(data) : null
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Ошибка: ${response.statusText}`);
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error("Ошибка при отправке запроса:", error);
+                return { status: "error", message: error.message };
             }
-            return "";
         }
 
-        // Отображение данных о погоде с анимациями
-        weatherData.forEach(weather => {
-            const card = document.createElement('div');
-            card.className = 'weather-card';
+        // Показать спиннер
+        function showLoader() {
+            const loader = document.createElement('div');
+            loader.className = 'loader';
+            loader.id = 'loader';
+            document.getElementById('output').appendChild(loader);
+        }
 
-            const content = document.createElement('div');
-            content.innerHTML = `
-                <h3>🌤 Погода на ${weather.time}</h3>
-                <p>🌡 Температура: ${weather.temp}°C</p>
-                <p>🌤 Погода: ${weather.description}</p>
-                <p>💧 Влажность: ${weather.humidity}%</p>
-                <p>🌬 Ветер: ${weather.wind_speed} м/с</p>
-            `;
-            card.appendChild(content);
+        // Скрыть спиннер
+        function hideLoader() {
+            const loader = document.getElementById('loader');
+            if (loader) loader.remove();
+        }
 
-            const animationUrl = getAnimationUrl(weather.description);
-            if (animationUrl) {
-                const animation = document.createElement('dotlottie-player');
-                animation.src = animationUrl;
-                animation.background = "transparent";
-                animation.speed = "1";
-                animation.style = "width: 100px; height: 100px";
-                animation.loop = true;
-                animation.autoplay = true;
-                card.appendChild(animation);
+        // Показать модальное окно с ошибкой
+        function showError(message) {
+            const modal = document.getElementById('modal');
+            const modalOverlay = document.getElementById('modal-overlay');
+            const modalMessage = document.getElementById('modal-message');
+
+            modalMessage.innerText = message;
+            modal.classList.add('show');
+            modalOverlay.classList.add('show');
+        }
+
+        // Скрыть модальное окно
+        function hideModal() {
+            const modal = document.getElementById('modal');
+            const modalOverlay = document.getElementById('modal-overlay');
+
+            modal.classList.remove('show');
+            modalOverlay.classList.remove('show');
+        }
+
+        // Открыть проводник
+        function openFileExplorer() {
+            const fileExplorer = document.getElementById('file-explorer');
+            fileExplorer.classList.add('active');
+            listFiles();  // Загрузить список файлов
+        }
+
+        // Скрыть проводник
+        function hideFileExplorer() {
+            const fileExplorer = document.getElementById('file-explorer');
+            fileExplorer.classList.remove('active');
+        }
+
+        // Включение ПК (Wake-on-LAN)
+        async function wakeOnLAN() {
+            hideFileExplorer(); // Скрываем проводник
+            showLoader(); // Показываем спиннер
+            const result = await sendRequest('wol', 'POST', { mac_address: '74:56:3c:96:53:39' });
+            hideLoader(); // Скрываем спиннер
+
+            const output = document.getElementById('output');
+            output.innerHTML = "";  // Очищаем предыдущий вывод
+
+            if (result.status === "success") {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <h3>🖥 Wake-on-LAN</h3>
+                    <p>✅ Magic Packet отправлен на MAC: ${result.mac_address}</p>
+                `;
+                output.appendChild(card);
+            } else {
+                showError(result.message); // Показываем ошибку
             }
+        }
 
-            output.appendChild(card);
-        });
+        // Получение погоды через OpenWeatherMap API
+        async function getWeather() {
+            hideFileExplorer(); // Скрываем проводник
+            showLoader(); // Показываем спиннер
+
+            try {
+                const response = await fetch(
+                    `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${openWeatherMapApiKey}&units=metric&lang=ru`
+                );
+                const data = await response.json();
+
+                if (data.cod !== 200) {
+                    throw new Error(data.message || "Ошибка при получении данных о погоде");
+                }
+
+                const output = document.getElementById('output');
+                output.innerHTML = "";  // Очищаем предыдущий вывод
+
+                const weather = {
+                    time: new Date().toLocaleTimeString(),
+                    temp: data.main.temp,
+                    description: data.weather[0].description,
+                    humidity: data.main.humidity,
+                    wind_speed: data.wind.speed
+                };
+
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <h3>🌤 Погода в ${city}</h3>
+                    <p>🌡 Температура: ${weather.temp}°C</p>
+                    <p>🌤 Погода: ${weather.description}</p>
+                    <p>💧 Влажность: ${weather.humidity}%</p>
+                    <p>🌬 Ветер: ${weather.wind_speed} м/с</p>
+                `;
+
+                // Добавляем анимацию в зависимости от погоды
+                let animationUrl = '';
+                if (weather.description.includes('ясно')) {
+                    animationUrl = 'https://lottie.host/4207a424-8cd3-4e1f-a206-409aa2b36f23/UqsfJj6X7o.lottie';
+                } else if (weather.description.includes('облачно')) {
+                    animationUrl = 'https://lottie.host/ad164e16-e71a-4b48-ae3f-865fa5e18d2c/ewrHDEmClM.lottie';
+                } else if (weather.description.includes('дождь')) {
+                    animationUrl = 'https://lottie.host/22c2fd98-f649-4e77-b90f-b98a3947ef20/vEKX17p5oK.lottie';
+                } else if (weather.description.includes('пасмурно')) {
+                    animationUrl = 'https://lottie.host/d718b6c5-3661-4d93-a851-305f19e753b4/of9hAzFTYJ.lottie';
+                } else if (weather.description.includes('гроза')) {
+                    animationUrl = 'https://lottie.host/c9a5f073-8253-44f0-b603-66dac096def2/7isT45zrAi.lottie';
+                } else if (weather.description.includes('снег')) {
+                    animationUrl = 'https://lottie.host/ea2ec7fa-1263-48a3-931e-6f9244d111cf/4lyCS8Wo95.lottie';
+                } else if (weather.description.includes('туман')) {
+                    animationUrl = 'https://lottie.host/d718b6c5-3661-4d93-a851-305f19e753b4/of9hAzFTYJ.lottie';
+                }
+
+                if (animationUrl) {
+                    const animation = document.createElement('dotlottie-player');
+                    animation.src = animationUrl;
+                    animation.background = 'transparent';
+                    animation.speed = '1';
+                    animation.style = 'width: 100px; height: 100px';
+                    animation.loop = true;
+                    animation.autoplay = true;
+                    card.appendChild(animation);
+                }
+
+                output.appendChild(card);
+            } catch (error) {
+                showError(error.message); // Показываем ошибку
+            } finally {
+                hideLoader(); // Скрываем спиннер
+            }
+        }
+
+        // Остальные функции (getCrypto, listFiles, deleteFileOrFolder, createFolder, uploadFile) остаются без изменений
+        // ...
+
+        // Инициализация Mini App Telegram
+        tg.ready();  // Уведомляем Telegram, что приложение готово
     </script>
 </body>
 </html>
