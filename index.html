@@ -173,10 +173,6 @@
         let currentPath = "/home/tema/Files";  // Текущий путь
         let pathHistory = [];  // История путей для кнопки "Назад"
 
-        // Ключ API для OpenWeatherMap (замените на свой)
-        const openWeatherMapApiKey = "3d79aa1b71dbdda6d891f3f04245840d";
-        const city = "Балашиха";  // Город, для которого запрашивается погода
-
         // Функция для отправки запросов на backend
         async function sendRequest(endpoint, method = "GET", data = {}) {
             try {
@@ -267,81 +263,222 @@
             }
         }
 
-        // Получение погоды через OpenWeatherMap API
+        // Получение погоды
         async function getWeather() {
             hideFileExplorer(); // Скрываем проводник
             showLoader(); // Показываем спиннер
+            const result = await sendRequest('weather', 'GET');
+            hideLoader(); // Скрываем спиннер
 
-            try {
-                const response = await fetch(
-                    `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${openWeatherMapApiKey}&units=metric&lang=ru`
-                );
-                const data = await response.json();
+            const output = document.getElementById('output');
+            output.innerHTML = "";  // Очищаем предыдущий вывод
 
-                if (data.cod !== 200) {
-                    throw new Error(data.message || "Ошибка при получении данных о погоде");
-                }
+            if (result.status === "success") {
+                result.data.forEach(weather => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerHTML = `
+                        <h3>🌤 Погода на ${weather.time}</h3>
+                        <p>🌡 Температура: ${weather.temp}°C</p>
+                        <p>🌤 Погода: ${weather.description}</p>
+                        <p>💧 Влажность: ${weather.humidity}%</p>
+                        <p>🌬 Ветер: ${weather.wind_speed} м/с</p>
+                    `;
 
-                const output = document.getElementById('output');
-                output.innerHTML = "";  // Очищаем предыдущий вывод
+                    // Добавляем анимацию в зависимости от погоды
+                    let animationUrl = '';
+                    if (weather.description.includes('ясно')) {
+                        animationUrl = 'https://lottie.host/4207a424-8cd3-4e1f-a206-409aa2b36f23/UqsfJj6X7o.lottie';
+                    } else if (weather.description.includes('облачно')) {
+                        animationUrl = 'https://lottie.host/ad164e16-e71a-4b48-ae3f-865fa5e18d2c/ewrHDEmClM.lottie';
+                    } else if (weather.description.includes('ливень')) {
+                        animationUrl = 'https://lottie.host/22c2fd98-f649-4e77-b90f-b98a3947ef20/vEKX17p5oK.lottie';
+                    } else if (weather.description.includes('пасмурно')) {
+                        animationUrl = 'https://lottie.host/d718b6c5-3661-4d93-a851-305f19e753b4/of9hAzFTYJ.lottie';
+                    } else if (weather.description.includes('гроза')) {
+                        animationUrl = 'https://lottie.host/c9a5f073-8253-44f0-b603-66dac096def2/7isT45zrAi.lottie';
+                    } else if (weather.description.includes('снег')) {
+                        animationUrl = 'https://lottie.host/ea2ec7fa-1263-48a3-931e-6f9244d111cf/4lyCS8Wo95.lottie';
+                    } else if (weather.description.includes('туман')) {
+                        animationUrl = 'https://lottie.host/d718b6c5-3661-4d93-a851-305f19e753b4/of9hAzFTYJ.lottie';
+                    } else if (weather.description.includes('малооблачно')) {
+                        animationUrl = 'https://lottie.host/ad164e16-e71a-4b48-ae3f-865fa5e18d2c/ewrHDEmClM.lottie';
+                    } else if (weather.description.includes('ночь')) {
+                        animationUrl = 'https://lottie.host/05d7240a-d891-40bf-b773-c15b26826848/6XQFCsxEi4.lottie';
+                    }
 
-                const weather = {
-                    time: new Date().toLocaleTimeString(),
-                    temp: data.main.temp,
-                    description: data.weather[0].description,
-                    humidity: data.main.humidity,
-                    wind_speed: data.wind.speed
-                };
+                    if (animationUrl) {
+                        const animation = document.createElement('dotlottie-player');
+                        animation.src = animationUrl;
+                        animation.background = 'transparent';
+                        animation.speed = '1';
+                        animation.style = 'width: 100px; height: 100px';
+                        animation.loop = true;
+                        animation.autoplay = true;
+                        card.appendChild(animation);
+                    }
 
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.innerHTML = `
-                    <h3>🌤 Погода в ${city}</h3>
-                    <p>🌡 Температура: ${weather.temp}°C</p>
-                    <p>🌤 Погода: ${weather.description}</p>
-                    <p>💧 Влажность: ${weather.humidity}%</p>
-                    <p>🌬 Ветер: ${weather.wind_speed} м/с</p>
-                `;
-
-                // Добавляем анимацию в зависимости от погоды
-                let animationUrl = '';
-                if (weather.description.includes('ясно')) {
-                    animationUrl = 'https://lottie.host/4207a424-8cd3-4e1f-a206-409aa2b36f23/UqsfJj6X7o.lottie';
-                } else if (weather.description.includes('облачно')) {
-                    animationUrl = 'https://lottie.host/ad164e16-e71a-4b48-ae3f-865fa5e18d2c/ewrHDEmClM.lottie';
-                } else if (weather.description.includes('дождь')) {
-                    animationUrl = 'https://lottie.host/22c2fd98-f649-4e77-b90f-b98a3947ef20/vEKX17p5oK.lottie';
-                } else if (weather.description.includes('пасмурно')) {
-                    animationUrl = 'https://lottie.host/d718b6c5-3661-4d93-a851-305f19e753b4/of9hAzFTYJ.lottie';
-                } else if (weather.description.includes('гроза')) {
-                    animationUrl = 'https://lottie.host/c9a5f073-8253-44f0-b603-66dac096def2/7isT45zrAi.lottie';
-                } else if (weather.description.includes('снег')) {
-                    animationUrl = 'https://lottie.host/ea2ec7fa-1263-48a3-931e-6f9244d111cf/4lyCS8Wo95.lottie';
-                } else if (weather.description.includes('туман')) {
-                    animationUrl = 'https://lottie.host/d718b6c5-3661-4d93-a851-305f19e753b4/of9hAzFTYJ.lottie';
-                }
-
-                if (animationUrl) {
-                    const animation = document.createElement('dotlottie-player');
-                    animation.src = animationUrl;
-                    animation.background = 'transparent';
-                    animation.speed = '1';
-                    animation.style = 'width: 100px; height: 100px';
-                    animation.loop = true;
-                    animation.autoplay = true;
-                    card.appendChild(animation);
-                }
-
-                output.appendChild(card);
-            } catch (error) {
-                showError(error.message); // Показываем ошибку
-            } finally {
-                hideLoader(); // Скрываем спиннер
+                    output.appendChild(card);
+                });
+            } else {
+                showError(result.message); // Показываем ошибку
             }
         }
 
-        // Остальные функции (getCrypto, listFiles, deleteFileOrFolder, createFolder, uploadFile) остаются без изменений
-        // ...
+        // Получение курсов криптовалют
+        async function getCrypto() {
+            hideFileExplorer(); // Скрываем проводник
+            showLoader(); // Показываем спиннер
+            const result = await sendRequest('crypto', 'GET');
+            hideLoader(); // Скрываем спиннер
+
+            const output = document.getElementById('output');
+            output.innerHTML = "";  // Очищаем предыдущий вывод
+
+            if (result.status === "success") {
+                result.data.forEach(crypto => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerHTML = `
+                        <h3>💰 ${crypto.name}</h3>
+                        <p>💰 USD: $${crypto.price_usd.toFixed(2)}</p>
+                        <p>₽ RUB: ₽${crypto.price_rub.toFixed(2)}</p>
+                        <p>📈 Изменение: ${crypto.change.toFixed(2)}%</p>
+                        <p>💼 Капитал: $${(crypto.market_cap / 1e9).toFixed(2)}B</p>
+                        <p>📊 Объем: $${(crypto.volume / 1e9).toFixed(2)}B</p>
+                    `;
+                    output.appendChild(card);
+                });
+            } else {
+                showError(result.message); // Показываем ошибку
+            }
+        }
+
+        // Получение списка файлов
+        async function listFiles(path = currentPath) {
+            showLoader(); // Показываем спиннер
+            const result = await sendRequest('list-files', 'GET', { path });
+            hideLoader(); // Скрываем спиннер
+
+            const fileList = document.getElementById('file-list');
+            fileList.innerHTML = "";
+
+            if (result.status === "success") {
+                currentPath = result.current_directory;
+                pathHistory.push(currentPath);  // Добавляем текущий путь в историю
+
+                // Добавляем кнопку "Назад", если это не корневой каталог
+                if (pathHistory.length > 1) {
+                    const backButton = document.createElement('button');
+                    backButton.innerText = "⬅️ Назад";
+                    backButton.onclick = () => {
+                        pathHistory.pop();  // Удаляем текущий путь из истории
+                        const previousPath = pathHistory[pathHistory.length - 1];
+                        listFiles(previousPath);
+                    };
+                    fileList.appendChild(backButton);
+                }
+
+                result.files.forEach(file => {
+                    const li = document.createElement('li');
+                    li.innerText = `📄 ${file}`;
+
+                    const deleteButton = document.createElement('button');
+                    deleteButton.innerText = "🗑 Удалить";
+                    deleteButton.onclick = () => deleteFileOrFolder(file, 'file');
+
+                    li.appendChild(deleteButton);
+                    fileList.appendChild(li);
+                });
+
+                result.folders.forEach(folder => {
+                    const li = document.createElement('li');
+                    li.innerText = `📁 ${folder}`;
+
+                    const openButton = document.createElement('button');
+                    openButton.innerText = "📂 Открыть";
+                    openButton.onclick = () => listFiles(`${currentPath}/${folder}`);
+
+                    const deleteButton = document.createElement('button');
+                    deleteButton.innerText = "🗑 Удалить";
+                    deleteButton.onclick = () => deleteFileOrFolder(folder, 'folder');
+
+                    li.appendChild(openButton);
+                    li.appendChild(deleteButton);
+                    fileList.appendChild(li);
+                });
+            } else {
+                showError(result.message); // Показываем ошибку
+            }
+        }
+
+        // Удаление файла или папки
+        async function deleteFileOrFolder(name, type) {
+            const confirmDelete = confirm(`Вы уверены, что хотите удалить ${type === 'file' ? 'файл' : 'папку'} "${name}"?`);
+            if (confirmDelete) {
+                showLoader(); // Показываем спиннер
+                const result = await sendRequest('delete-file', 'POST', { file_name: name, action: 'delete' });
+                hideLoader(); // Скрываем спиннер
+
+                if (result.status === "success") {
+                    listFiles();  // Обновляем список файлов
+                } else {
+                    showError(result.message); // Показываем ошибку
+                }
+            }
+        }
+
+        // Создание папки
+        async function createFolder() {
+            const folderName = prompt("Введите имя новой папки:");
+            if (folderName) {
+                showLoader(); // Показываем спиннер
+                try {
+                    const result = await sendRequest('create-folder', 'POST', { folder_name: folderName });
+                    hideLoader(); // Скрываем спиннер
+
+                    if (result.status === "success") {
+                        listFiles(); // Обновляем список файлов
+                    } else {
+                        showError(result.message); // Показываем ошибку
+                    }
+                } catch (error) {
+                    hideLoader(); // Скрываем спиннер
+                    showError("Ошибка при создании папки.");
+                }
+            }
+        }
+
+        // Загрузка файла
+        async function uploadFile() {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.onchange = async (event) => {
+                const file = event.target.files[0];
+                const formData = new FormData();
+                formData.append('file', file);
+
+                showLoader(); // Показываем спиннер
+                try {
+                    const response = await fetch(`${backendUrl}/upload-file`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const result = await response.json();
+                    hideLoader(); // Скрываем спиннер
+
+                    if (result.status === "success") {
+                        listFiles(); // Обновляем список файлов
+                    } else {
+                        showError(result.message); // Показываем ошибку
+                    }
+                } catch (error) {
+                    hideLoader(); // Скрываем спиннер
+                    showError("Ошибка при загрузке файла.");
+                }
+            };
+            fileInput.click();
+        }
 
         // Инициализация Mini App Telegram
         tg.ready();  // Уведомляем Telegram, что приложение готово
