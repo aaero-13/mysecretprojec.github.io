@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Управление ПК и файлами</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
+  <style>
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
@@ -18,78 +18,21 @@
         }
         button {
             padding: 10px 20px;
-            margin: 5px;
-            font-size: 16px;
-            cursor: pointer;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            transition: background-color 0.3s ease;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-        pre {
-            background: #f4f4f4;
-            padding: 10px;
-            border-radius: 5px;
-            overflow-x: auto;
-        }
-        .card {
-            background-color: white;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 15px;
-            margin: 10px 0;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        .card h3 {
-            margin: 0 0 10px;
-            font-size: 18px;
-            color: #007bff;
-        }
-        .card p {
-            margin: 5px 0;
-            font-size: 14px;
-            color: #555;
-        }
-        .file-list {
-            margin-top: 20px;
-        }
-        .file-list ul {
-            list-style-type: none;
-            padding: 0;
-        }
-        .file-list li {
-            margin: 5px 0;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px;
-            background-color: white;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-        }
-        .file-list button {
-            margin-left: 10px;
-            background-color: #dc3545;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            padding: 5px 10px;
-            cursor: pointer;
-        }
-        .file-list button:hover {
-            background-color: #c82333;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        /* Адаптация для мобильных устройств */
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 24px;
+            }
+            button {
+                width: 100%;
+                margin: 5px 0;
+            }
+            .crypto-container {
+                flex-direction: column;
+            }
+            .card {
+                padding: 15px;
+            }
         }
     </style>
 </head>
@@ -140,7 +83,20 @@
         // Включение ПК (Wake-on-LAN)
         async function wakeOnLAN() {
             const result = await sendRequest('wol', 'POST', { mac_address: '74:56:3c:96:53:39' });
-            document.getElementById('output').innerText = JSON.stringify(result, null, 2);
+            const output = document.getElementById('output');
+            output.innerHTML = "";  // Очищаем предыдущий вывод
+
+            if (result.status === "success") {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <h3>🖥 Wake-on-LAN</h3>
+                    <p>✅ Magic Packet отправлен на MAC: ${result.mac_address}</p>
+                `;
+                output.appendChild(card);
+            } else {
+                output.innerText = result.message;
+            }
         }
 
         // Получение погоды
@@ -150,18 +106,16 @@
             output.innerHTML = "";  // Очищаем предыдущий вывод
 
             if (result.status === "success") {
-                result.data.forEach(entry => {
-                    const card = document.createElement('div');
-                    card.className = 'card';
-                    card.innerHTML = `
-                        <h3>${entry.time}</h3>
-                        <p>🌡 Температура: ${entry.temp}°C</p>
-                        <p>🌤 Погода: ${entry.description}</p>
-                        <p>💧 Влажность: ${entry.humidity}%</p>
-                        <p>🌬 Ветер: ${entry.wind_speed} м/с</p>
-                    `;
-                    output.appendChild(card);
-                });
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <h3>🌤 Текущая погода</h3>
+                    <p>🌡 Температура: ${result.data[0].temp}°C</p>
+                    <p>🌤 Погода: ${result.data[0].description}</p>
+                    <p>💧 Влажность: ${result.data[0].humidity}%</p>
+                    <p>🌬 Ветер: ${result.data[0].wind_speed} м/с</p>
+                `;
+                output.appendChild(card);
             } else {
                 output.innerText = result.message;
             }
@@ -175,17 +129,31 @@
 
             if (result.status === "success") {
                 result.data.forEach(crypto => {
-                    const card = document.createElement('div');
-                    card.className = 'card';
-                    card.innerHTML = `
-                        <h3>${crypto.name}</h3>
+                    const cryptoContainer = document.createElement('div');
+                    cryptoContainer.className = 'crypto-container';
+
+                    // Основная информация о криптовалюте
+                    const cryptoInfo = document.createElement('div');
+                    cryptoInfo.className = 'crypto-info';
+                    cryptoInfo.innerHTML = `
+                        <h3>💰 ${crypto.name}</h3>
                         <p>💰 USD: $${crypto.price_usd.toFixed(2)}</p>
                         <p>₽ RUB: ₽${crypto.price_rub.toFixed(2)}</p>
+                    `;
+
+                    // Дополнительные данные
+                    const cryptoDetails = document.createElement('div');
+                    cryptoDetails.className = 'crypto-details';
+                    cryptoDetails.innerHTML = `
+                        <h3>📊 Детали</h3>
                         <p>📈 Изменение: ${crypto.change.toFixed(2)}%</p>
                         <p>💼 Капитал: $${(crypto.market_cap / 1e9).toFixed(2)}B</p>
                         <p>📊 Объем: $${(crypto.volume / 1e9).toFixed(2)}B</p>
                     `;
-                    output.appendChild(card);
+
+                    cryptoContainer.appendChild(cryptoInfo);
+                    cryptoContainer.appendChild(cryptoDetails);
+                    output.appendChild(cryptoContainer);
                 });
             } else {
                 output.innerText = result.message;
