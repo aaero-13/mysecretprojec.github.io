@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Управление ПК и файлами</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -81,6 +82,7 @@
 
     <script>
         const backendUrl = "https://aaero.ddns.net:8000";  // Замените на ваш URL
+        const tg = window.Telegram.WebApp;  // Инициализация Telegram WebApp API
 
         // Функция для отправки запросов на backend
         async function sendRequest(endpoint, method = "GET", data = {}) {
@@ -263,6 +265,9 @@
                 listFiles();  // Обновляем список файлов
             }
         }
+
+        // Инициализация Mini App Telegram
+        tg.ready();  // Уведомляем Telegram, что приложение готово
     </script>
 </body>
 </html>
