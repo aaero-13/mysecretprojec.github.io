@@ -30,43 +30,52 @@
         button:hover {
             background-color: #0056b3;
         }
-        .data-list {
-            margin-top: 20px;
-        }
-        .data-item {
-            display: flex;
-            align-items: center;
+        .card {
             background-color: white;
             border: 1px solid #ddd;
             border-radius: 8px;
-            padding: 10px;
+            padding: 20px;
             margin: 10px 0;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-        .data-item i {
-            font-size: 24px;
-            margin-right: 10px;
+        .card h3 {
+            margin-top: 0;
             color: #007bff;
         }
-        .data-item .content {
-            flex-grow: 1;
-        }
-        .data-item .content p {
+        .card p {
             margin: 5px 0;
             font-size: 14px;
             color: #555;
         }
-        .weather-widget {
+        .crypto-container {
+            display: flex;
+            gap: 20px;
             margin-top: 20px;
-            text-align: center;
         }
-        .weather-widget iframe {
-            width: 100%;
-            max-width: 600px;
-            height: 200px;
-            border: none;
+        .crypto-info {
+            flex: 1;
+            background-color: white;
+            border: 1px solid #ddd;
             border-radius: 8px;
+            padding: 20px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .crypto-details {
+            flex: 1;
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .crypto-details h3 {
+            margin-top: 0;
+            color: #007bff;
+        }
+        .crypto-details p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #555;
         }
         .file-list {
             margin-top: 20px;
@@ -115,8 +124,11 @@
                 width: 100%;
                 margin: 5px 0;
             }
-            .weather-widget iframe {
-                height: 150px;
+            .crypto-container {
+                flex-direction: column;
+            }
+            .card {
+                padding: 15px;
             }
         }
     </style>
@@ -134,12 +146,6 @@
 
         <h2>Результат:</h2>
         <div id="output"></div>
-
-        <!-- Погодный виджет -->
-        <div class="weather-widget">
-            <div id="ww_9adb3171eab63" v='1.3' loc='auto' a='{"t":"horizontal","lang":"ru","sl_lpl":1,"ids":[],"font":"Arial","sl_ics":"one_a","sl_sot":"celsius","cl_bkg":"image","cl_font":"#FFFFFF","cl_cloud":"#FFFFFF","cl_persp":"#81D4FA","cl_sun":"#FFC107","cl_moon":"#FFC107","cl_thund":"#FF5722"}'></div>
-            <script async src="https://app3.weatherwidget.org/js/?id=ww_9adb3171eab63"></script>
-        </div>
 
         <div class="file-list">
             <h2>Файлы и папки:</h2>
@@ -178,16 +184,13 @@
             output.innerHTML = "";  // Очищаем предыдущий вывод
 
             if (result.status === "success") {
-                const item = document.createElement('div');
-                item.className = 'data-item';
-                item.innerHTML = `
-                    <i>🖥</i>
-                    <div class="content">
-                        <p><strong>Wake-on-LAN</strong></p>
-                        <p>✅ Magic Packet отправлен на MAC: ${result.mac_address}</p>
-                    </div>
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <h3>🖥 Wake-on-LAN</h3>
+                    <p>✅ Magic Packet отправлен на MAC: ${result.mac_address}</p>
                 `;
-                output.appendChild(item);
+                output.appendChild(card);
             } else {
                 output.innerText = result.message;
             }
@@ -200,19 +203,16 @@
             output.innerHTML = "";  // Очищаем предыдущий вывод
 
             if (result.status === "success") {
-                const item = document.createElement('div');
-                item.className = 'data-item';
-                item.innerHTML = `
-                    <i>🌤</i>
-                    <div class="content">
-                        <p><strong>Текущая погода</strong></p>
-                        <p>🌡 Температура: ${result.data[0].temp}°C</p>
-                        <p>🌤 Погода: ${result.data[0].description}</p>
-                        <p>💧 Влажность: ${result.data[0].humidity}%</p>
-                        <p>🌬 Ветер: ${result.data[0].wind_speed} м/с</p>
-                    </div>
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <h3>🌤 Текущая погода</h3>
+                    <p>🌡 Температура: ${result.data[0].temp}°C</p>
+                    <p>🌤 Погода: ${result.data[0].description}</p>
+                    <p>💧 Влажность: ${result.data[0].humidity}%</p>
+                    <p>🌬 Ветер: ${result.data[0].wind_speed} м/с</p>
                 `;
-                output.appendChild(item);
+                output.appendChild(card);
             } else {
                 output.innerText = result.message;
             }
@@ -226,20 +226,31 @@
 
             if (result.status === "success") {
                 result.data.forEach(crypto => {
-                    const item = document.createElement('div');
-                    item.className = 'data-item';
-                    item.innerHTML = `
-                        <i>💰</i>
-                        <div class="content">
-                            <p><strong>${crypto.name}</strong></p>
-                            <p>💰 USD: $${crypto.price_usd.toFixed(2)}</p>
-                            <p>₽ RUB: ₽${crypto.price_rub.toFixed(2)}</p>
-                            <p>📈 Изменение: ${crypto.change.toFixed(2)}%</p>
-                            <p>💼 Капитал: $${(crypto.market_cap / 1e9).toFixed(2)}B</p>
-                            <p>📊 Объем: $${(crypto.volume / 1e9).toFixed(2)}B</p>
-                        </div>
+                    const cryptoContainer = document.createElement('div');
+                    cryptoContainer.className = 'crypto-container';
+
+                    // Основная информация о криптовалюте
+                    const cryptoInfo = document.createElement('div');
+                    cryptoInfo.className = 'crypto-info';
+                    cryptoInfo.innerHTML = `
+                        <h3>💰 ${crypto.name}</h3>
+                        <p>💰 USD: $${crypto.price_usd.toFixed(2)}</p>
+                        <p>₽ RUB: ₽${crypto.price_rub.toFixed(2)}</p>
                     `;
-                    output.appendChild(item);
+
+                    // Дополнительные данные
+                    const cryptoDetails = document.createElement('div');
+                    cryptoDetails.className = 'crypto-details';
+                    cryptoDetails.innerHTML = `
+                        <h3>📊 Детали</h3>
+                        <p>📈 Изменение: ${crypto.change.toFixed(2)}%</p>
+                        <p>💼 Капитал: $${(crypto.market_cap / 1e9).toFixed(2)}B</p>
+                        <p>📊 Объем: $${(crypto.volume / 1e9).toFixed(2)}B</p>
+                    `;
+
+                    cryptoContainer.appendChild(cryptoInfo);
+                    cryptoContainer.appendChild(cryptoDetails);
+                    output.appendChild(cryptoContainer);
                 });
             } else {
                 output.innerText = result.message;
