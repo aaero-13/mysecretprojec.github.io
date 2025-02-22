@@ -24,6 +24,25 @@
             border-radius: 5px;
             overflow-x: auto;
         }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
         .file-list {
             margin-top: 20px;
         }
@@ -40,29 +59,6 @@
         .file-list button {
             margin-left: 10px;
         }
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            justify-content: center;
-            align-items: center;
-        }
-        .modal-content {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-        }
-        .modal-buttons {
-            margin-top: 20px;
-        }
-        .modal-buttons button {
-            margin: 0 10px;
-        }
     </style>
 </head>
 <body>
@@ -76,28 +72,15 @@
     <button onclick="createFolder()">📂 Создать папку</button>
 
     <h2>Результат:</h2>
-    <pre id="output"></pre>
+    <div id="output"></div>
 
     <div class="file-list">
         <h2>Файлы и папки:</h2>
         <ul id="file-list"></ul>
     </div>
 
-    <!-- Модальное окно для подтверждения удаления -->
-    <div id="deleteModal" class="modal">
-        <div class="modal-content">
-            <p id="modalMessage"></p>
-            <div class="modal-buttons">
-                <button onclick="confirmDelete()">✅ Да</button>
-                <button onclick="cancelDelete()">❌ Нет</button>
-            </div>
-        </div>
-    </div>
-
     <script>
-        const backendUrl = "https://aaero.ddns.net:8000";  // Замените на ваш URL
-        let itemToDelete = null;  // Хранит имя файла/папки для удаления
-        let itemType = null;  // Хранит тип (файл или папка)
+        const backendUrl = "http://aaero.ddns.net:8000";  // Замените на ваш URL
 
         // Функция для отправки запросов на backend
         async function sendRequest(endpoint, method = "GET", data = {}) {
@@ -127,14 +110,76 @@
 
         // Получение погоды
         async function getWeather() {
-            const result = await sendRequest('weather', 'GET', { city: 'Balashikha' });
-            document.getElementById('output').innerText = JSON.stringify(result, null, 2);
+            const result = await sendRequest('weather', 'GET');
+            const output = document.getElementById('output');
+            output.innerHTML = "";  // Очищаем предыдущий вывод
+
+            if (result.status === "success") {
+                const table = document.createElement('table');
+                table.innerHTML = `
+                    <thead>
+                        <tr>
+                            <th>Время</th>
+                            <th>Температура</th>
+                            <th>Погода</th>
+                            <th>Влажность</th>
+                            <th>Ветер</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${result.data.map(entry => `
+                            <tr>
+                                <td>${entry.time}</td>
+                                <td>${entry.temp}°C</td>
+                                <td>${entry.description}</td>
+                                <td>${entry.humidity}%</td>
+                                <td>${entry.wind_speed} м/с</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                `;
+                output.appendChild(table);
+            } else {
+                output.innerText = result.message;
+            }
         }
 
         // Получение курсов криптовалют
         async function getCrypto() {
-            const result = await sendRequest('crypto', 'GET', { coins: ['bitcoin', 'ethereum', 'solana'] });
-            document.getElementById('output').innerText = JSON.stringify(result, null, 2);
+            const result = await sendRequest('crypto', 'GET');
+            const output = document.getElementById('output');
+            output.innerHTML = "";  // Очищаем предыдущий вывод
+
+            if (result.status === "success") {
+                const table = document.createElement('table');
+                table.innerHTML = `
+                    <thead>
+                        <tr>
+                            <th>Криптовалюта</th>
+                            <th>USD</th>
+                            <th>RUB</th>
+                            <th>Изменение</th>
+                            <th>Капитал</th>
+                            <th>Объем</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${result.data.map(crypto => `
+                            <tr>
+                                <td>${crypto.name}</td>
+                                <td>$${crypto.price_usd.toFixed(2)}</td>
+                                <td>₽${crypto.price_rub.toFixed(2)}</td>
+                                <td>${crypto.change.toFixed(2)}%</td>
+                                <td>$${(crypto.market_cap / 1e9).toFixed(2)}B</td>
+                                <td>$${(crypto.volume / 1e9).toFixed(2)}B</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                `;
+                output.appendChild(table);
+            } else {
+                output.innerText = result.message;
+            }
         }
 
         // Получение списка файлов
@@ -150,7 +195,7 @@
 
                     const deleteButton = document.createElement('button');
                     deleteButton.innerText = "🗑 Удалить";
-                    deleteButton.onclick = () => showDeleteModal(file, 'file');
+                    deleteButton.onclick = () => deleteFileOrFolder(file, 'file');
 
                     li.appendChild(deleteButton);
                     fileList.appendChild(li);
@@ -162,7 +207,7 @@
 
                     const deleteButton = document.createElement('button');
                     deleteButton.innerText = "🗑 Удалить";
-                    deleteButton.onclick = () => showDeleteModal(folder, 'folder');
+                    deleteButton.onclick = () => deleteFileOrFolder(folder, 'folder');
 
                     li.appendChild(deleteButton);
                     fileList.appendChild(li);
@@ -172,35 +217,16 @@
             }
         }
 
-        // Показать модальное окно для подтверждения удаления
-        function showDeleteModal(name, type) {
-            itemToDelete = name;
-            itemType = type;
-            document.getElementById('modalMessage').innerText = `Вы уверены, что хотите удалить ${type === 'file' ? 'файл' : 'папку'} "${name}"?`;
-            document.getElementById('deleteModal').style.display = 'flex';
-        }
-
-        // Подтверждение удаления
-        async function confirmDelete() {
-            if (itemToDelete) {
-                const result = await sendRequest('delete-file', 'POST', { file_name: itemToDelete, action: 'delete' });
+        // Удаление файла или папки
+        async function deleteFileOrFolder(name, type) {
+            const confirmDelete = confirm(`Вы уверены, что хотите удалить ${type === 'file' ? 'файл' : 'папку'} "${name}"?`);
+            if (confirmDelete) {
+                const result = await sendRequest('delete-file', 'POST', { file_name: name, action: 'delete' });
                 document.getElementById('output').innerText = JSON.stringify(result, null, 2);
                 listFiles();  // Обновляем список файлов
+            } else {
+                document.getElementById('output').innerText = "Удаление отменено.";
             }
-            closeModal();
-        }
-
-        // Отмена удаления
-        function cancelDelete() {
-            document.getElementById('output').innerText = "Удаление отменено.";
-            closeModal();
-        }
-
-        // Закрыть модальное окно
-        function closeModal() {
-            document.getElementById('deleteModal').style.display = 'none';
-            itemToDelete = null;
-            itemType = null;
         }
 
         // Загрузка файла
