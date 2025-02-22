@@ -310,6 +310,7 @@
         async function listFiles(path = currentPath) {
             const result = await sendRequest('list-files', 'GET', { path });
             const fileList = document.getElementById('file-list');
+            output.innerHTML = "";  // Очищаем предыдущий вывод
             fileList.innerHTML = "";
 
             if (result.status === "success") {
