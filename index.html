@@ -262,31 +262,33 @@
             }
         }
 
-        // Получение погоды
-        async function getWeather() {
-            hideFileExplorer(); // Скрываем проводник
-            showLoader(); // Показываем спиннер
-            const result = await sendRequest('weather', 'GET');
-            hideLoader(); // Скрываем спиннер
+// Получение погоды
+async function getWeather() {
+    hideFileExplorer(); // Скрываем проводник
+    showLoader(); // Показываем спиннер
+    const result = await sendRequest('weather', 'GET');
+    hideLoader(); // Скрываем спиннер
 
-            const output = document.getElementById('output');
-            output.innerHTML = "";  // Очищаем предыдущий вывод
+    const output = document.getElementById('output');
+    output.innerHTML = "";  // Очищаем предыдущий вывод
 
-            if (result.status === "success") {
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.innerHTML = `
-                    <h3>🌤 Текущая погода</h3>
-                    <p>🌡 Температура: ${result.data[0].temp}°C</p>
-                    <p>🌤 Погода: ${result.data[0].description}</p>
-                    <p>💧 Влажность: ${result.data[0].humidity}%</p>
-                    <p>🌬 Ветер: ${result.data[0].wind_speed} м/с</p>
-                `;
-                output.appendChild(card);
-            } else {
-                showError(result.message); // Показываем ошибку
-            }
-        }
+    if (result.status === "success") {
+        result.data.forEach(weather => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+                <h3>🌤 Погода на ${weather.time}</h3>
+                <p>🌡 Температура: ${weather.temp}°C</p>
+                <p>🌤 Погода: ${weather.description}</p>
+                <p>💧 Влажность: ${weather.humidity}%</p>
+                <p>🌬 Ветер: ${weather.wind_speed} м/с</p>
+            `;
+            output.appendChild(card);
+        });
+    } else {
+        showError(result.message); // Показываем ошибку
+    }
+}
 
         // Получение курсов криптовалют
         async function getCrypto() {
